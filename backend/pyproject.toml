@@ -1,0 +1,26 @@
+[project]
+name = "papers-api"
+version = "0.1.0"
+description = "Semantic search over recent arXiv papers: API and worker"
+authors = [
+    { name = "Michael Birmingham", email = "mbirmingham24@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141.1",
+    "pydantic-settings>=2.15.0",
+    "uvicorn[standard]>=0.53.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
