@@ -1,0 +1,3 @@
+# Normalize line endings: LF in the repo and in every checkout, regardless of OS.
+# Containers run Linux; CRLF in shell scripts or entrypoints breaks them.
+* text=auto eol=lf
