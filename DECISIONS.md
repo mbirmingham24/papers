@@ -30,4 +30,5 @@ Format: **date — symptom.** Root cause. Fix. (1–2 lines each.)
 | | search p50 / p95 (reranked) | | |
 | | rerank latency torch vs. ONNX | | |
 | | recall@10 embed vs. rerank vs. fine-tuned | | |
-| | prod image size / idle memory | | |
+| 2026-09-23 | prod image size / idle memory | 233 MB / 42 MiB | week 0 skeleton, no ML deps yet |
+| 2026-09-23 | Render cold start / warm `/health` | 13.3 s / 0.15 s | week 0 skeleton; ~17 min idle before cold request |

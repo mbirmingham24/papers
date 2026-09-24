@@ -10,7 +10,7 @@
 - Use Postgres as more than storage (vector search, indexes, migrations)
 - Run background jobs with retries and idempotency
 - Tests and CI from week 1, not bolted on at the end
-- One real AWS deployment (ECR + ECS), torn down same day
+- One real AWS deployment (ECR + ECS Fargate) on a Free-plan account, torn down when done
 
 **Resume outcome:** numbers, not features. See §9.
 
@@ -109,11 +109,11 @@ Every job must be safe to rerun. Retries with backoff for network failures.
 **Prod (free tier):**
 - **Postgres:** Neon or Supabase (both support pgvector)
 - **Redis:** Upstash
-- **API:** a free container host (Render, Koyeb, or Fly.io). **Verify current free-tier terms in week 0; these change often.** Expect cold starts on some.
+- **API:** Render free web service, Docker runtime, root directory `backend`. Auto-deploys from `main` after CI passes (only when files under `backend/` change). Sleeps after 15 min idle; cold start measured at ~13 s in week 0. (Koyeb and Fly.io checked in week 0: no free compute.)
 - **Frontend:** Cloudflare Pages or Vercel
 - **Ingest in prod:** scheduled GitHub Actions workflow calling the same ingest function, instead of paying for an always-on worker. Retraining stays local.
 
-**AWS exercise (week 7):** push the existing image to ECR, run it on ECS Fargate pointed at the Neon DB. Set a **$5 billing alarm before creating anything**. Tear down the service and any load balancer the same day.
+**AWS exercise (week 7):** open a new AWS account on the **Free plan** at the start of week 7 (it can't incur charges and closes itself 6 months after signup; $100+ in credits). Check in the console that ECS Fargate is allowed on the Free plan. Push the existing image to ECR, run it on ECS Fargate behind a load balancer, pointed at the Neon DB. Set a budget alarm anyway, as practice. Tear down the service and load balancer when done.
 
 **Secrets:** env vars on each host; `.env.example` in repo; nothing committed.
 
@@ -128,7 +128,7 @@ Every job must be safe to rerun. Retries with backoff for network failures.
 | 4 | Off-the-shelf cross-encoder rerank, ONNX in serving | p50/p95 recorded before vs. after rerank |
 | 5 | Feedback UI + table, `rerank=false` comparison | 100+ labels collected by using it |
 | 6 | Local fine-tune job, model versioning, activate endpoint | new version beats baseline on held-out labels, or you know why not |
-| 7 | Latency work (batching, caching, quantization), AWS exercise | p95 target met or documented; AWS torn down |
+| 7 | Latency work (batching, caching, quantization), AWS exercise | p95 target met or documented; AWS torn down when done |
 | 8 | README, architecture diagram, cleanup, final deploy | a stranger can run it from the README |
 
 **Week 0 is non-negotiable.** Deploy before the app is complicated.
