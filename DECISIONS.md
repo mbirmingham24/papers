@@ -13,12 +13,14 @@ Format: **date — decision.** Why. What I gave up.
 - **2026-09 — Free-tier hosting + GitHub Actions for scheduled ingest.** Zero recurring cost. Gave up an always-on worker in prod.
 - **2026-09 — uv for Python packaging.** Fast, lockfile (`uv.lock`) for reproducible installs, caches well in Docker layers. Gave up the familiarity of plain pip/requirements.txt.
 - **2026-09 — `/health` is liveness-only in week 0; DB/Redis checks added in week 1.** Lets the first deploy ship before Neon/Upstash exist. Gave up (temporarily) a health check that catches dependency outages.
+- **2026-09 — Render for the API host.** Of Render/Koyeb/Fly, only Render still has free compute; builds from the repo Dockerfile, auto-deploys after CI passes. Gave up warm starts (sleeps after 15 min idle).
+- **2026-09 — AWS exercise on a new Free-plan account (open it in week 7), not a paid account + billing alarm.** Free plan can't incur charges; $100+ credits cover Fargate + ALB for weeks. Gave up: account auto-closes 6 months after signup.
 
 ## Bug log
 
 Format: **date — symptom.** Root cause. Fix. (1–2 lines each.)
 
--
+- **2026-09-23 — CI failed at "Set up job" before any step ran.** `astral-sh/setup-uv@v10` doesn't exist; that repo publishes only exact tags. Pinned `@v10.2.0`.
 
 ## Measurements
 
