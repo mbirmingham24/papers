@@ -20,7 +20,7 @@ dist/
 *.onnx
 *.pt
 *.bin
-models/
+/models/
 
 # OS / editor
 .DS_Store
