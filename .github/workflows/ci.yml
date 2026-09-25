@@ -10,6 +10,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: papers
+          POSTGRES_PASSWORD: papers
+          POSTGRES_DB: papers_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U papers -d papers_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v7
 
