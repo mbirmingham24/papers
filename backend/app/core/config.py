@@ -8,8 +8,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     environment: Literal["local", "test", "prod"] = "local"
-    # Default matches docker-compose's Postgres as seen from the host. Prod sets its own.
-    database_url: str = "postgresql+asyncpg://papers:papers@localhost:5432/papers"
+    # No default: a missing or misspelled DATABASE_URL must fail at startup,
+    # not silently point prod at localhost. Local dev gets it from .env.
+    database_url: str
 
 
 @lru_cache
