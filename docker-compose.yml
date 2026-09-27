@@ -32,6 +32,7 @@ services:
     environment:
       ENVIRONMENT: local
       DATABASE_URL: postgresql+asyncpg://papers:papers@postgres:5432/papers
+      REDIS_URL: redis://redis:6379/0
       # Docker Desktop on Windows doesn't forward file-change events into bind mounts.
       WATCHFILES_FORCE_POLLING: "true"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

@@ -15,6 +15,9 @@ TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+asyncpg://papers:papers@localhost:5432/papers_test"
 )
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+# Redis DB 15, not 0: once the app caches embeddings in DB 0, tests can flush theirs
+# without wiping the dev cache.
+os.environ["REDIS_URL"] = os.environ.get("TEST_REDIS_URL", "redis://localhost:6379/15")
 os.environ["ENVIRONMENT"] = "test"
 
 
