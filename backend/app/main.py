@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
@@ -9,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_session
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -30,6 +33,9 @@ async def health(
     try:
         async with asyncio.timeout(HEALTH_DB_TIMEOUT_S):
             await session.execute(text("SELECT 1"))
-    except (SQLAlchemyError, OSError, TimeoutError):
+    except (SQLAlchemyError, OSError, TimeoutError) as exc:
+        # Details go to the logs only: /health is public. One line, not a traceback,
+        # because Render's prober hits this every few seconds during an outage.
+        logger.warning("health: database check failed: %r", exc)
         return JSONResponse({"status": "error", "database": "unreachable"}, status_code=503)
     return JSONResponse({"status": "ok", "database": "ok"})

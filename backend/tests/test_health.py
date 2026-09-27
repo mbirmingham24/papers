@@ -1,5 +1,7 @@
+import logging
 from collections.abc import AsyncIterator
 
+import pytest
 from httpx2 import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -19,7 +21,7 @@ async def test_health_ok_when_database_reachable(test_database: str) -> None:
     assert response.json() == {"status": "ok", "database": "ok"}
 
 
-async def test_health_503_when_database_unreachable() -> None:
+async def test_health_503_when_database_unreachable(caplog: pytest.LogCaptureFixture) -> None:
     # Port 1 on localhost: nothing listens there, so the connection is refused immediately.
     dead_engine = create_async_engine("postgresql+asyncpg://x:x@127.0.0.1:1/x")
 
@@ -37,3 +39,6 @@ async def test_health_503_when_database_unreachable() -> None:
 
     assert response.status_code == 503
     assert response.json() == {"status": "error", "database": "unreachable"}
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "database check failed" in warnings[0].getMessage()
