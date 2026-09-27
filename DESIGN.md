@@ -72,7 +72,8 @@ model_versions
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/health` | liveness, DB and Redis reachable |
+| GET | `/livez` | liveness only, no dependency calls; Render's health check path |
+| GET | `/health` | DB and Redis reachable |
 | GET | `/search?q=&rerank=true` | search; `rerank=false` for comparison |
 | GET | `/papers/{id}` | paper detail |
 | POST | `/feedback` | `{search_id, paper_id, label}` |

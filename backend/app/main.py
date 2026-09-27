@@ -22,6 +22,14 @@ app = FastAPI(
     redoc_url=None,
 )
 
+
+@app.get("/livez")
+async def livez() -> dict[str, str]:
+    """Liveness for the host's prober: the process is up. Touches no dependencies, so frequent
+    probes cost nothing and don't keep Neon awake. /health is the dependency check."""
+    return {"status": "ok"}
+
+
 # Long enough for Neon to wake from scale-to-zero, short enough not to hang the caller.
 HEALTH_DB_TIMEOUT_S = 5
 

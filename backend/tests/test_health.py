@@ -13,15 +13,9 @@ def _client() -> AsyncClient:
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
-async def test_health_ok_when_database_reachable(test_database: str) -> None:
-    async with _client() as client:
-        response = await client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok", "database": "ok"}
-
-
-async def test_health_503_when_database_unreachable(caplog: pytest.LogCaptureFixture) -> None:
+@pytest.fixture
+async def dead_database() -> AsyncIterator[None]:
+    """Point the app's DB session at a database that refuses connections."""
     # Port 1 on localhost: nothing listens there, so the connection is refused immediately.
     dead_engine = create_async_engine("postgresql+asyncpg://x:x@127.0.0.1:1/x")
 
@@ -31,14 +25,36 @@ async def test_health_503_when_database_unreachable(caplog: pytest.LogCaptureFix
 
     app.dependency_overrides[get_session] = dead_session
     try:
-        async with _client() as client:
-            response = await client.get("/health")
+        yield
     finally:
         app.dependency_overrides.clear()
         await dead_engine.dispose()
+
+
+async def test_health_ok_when_database_reachable(test_database: str) -> None:
+    async with _client() as client:
+        response = await client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "database": "ok"}
+
+
+async def test_health_503_when_database_unreachable(
+    dead_database: None, caplog: pytest.LogCaptureFixture
+) -> None:
+    async with _client() as client:
+        response = await client.get("/health")
 
     assert response.status_code == 503
     assert response.json() == {"status": "error", "database": "unreachable"}
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 1
     assert "database check failed" in warnings[0].getMessage()
+
+
+async def test_livez_ok_even_when_database_unreachable(dead_database: None) -> None:
+    async with _client() as client:
+        response = await client.get("/livez")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
