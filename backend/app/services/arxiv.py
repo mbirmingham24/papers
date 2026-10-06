@@ -1,5 +1,7 @@
 """Client for the arXiv export API (Atom feed): https://info.arxiv.org/help/api/user-manual.html"""
 
+import asyncio
+import logging
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -7,7 +9,12 @@ from datetime import datetime
 
 import httpx2
 
+logger = logging.getLogger(__name__)
+
 API_URL = "https://export.arxiv.org/api/query"
+
+# Wait before each retry, doubling every time; a page is tried once more than this has entries.
+RETRY_DELAYS_S: tuple[float, ...] = (3.0, 6.0, 12.0)
 
 # Feed elements live in XML namespaces; ElementTree needs the prefix in every lookup.
 _NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
@@ -61,19 +68,36 @@ def parse_feed(xml: bytes) -> list[ArxivPaper]:
     return [_parse_entry(entry) for entry in root.findall("atom:entry", _NS)]
 
 
+def _is_retryable(exc: httpx2.HTTPError) -> bool:
+    if isinstance(exc, httpx2.HTTPStatusError):
+        # 429 and 5xx are the server asking us to come back later; other 4xx mean the
+        # request itself is wrong, and sending it again won't change the answer.
+        return exc.response.status_code == 429 or exc.response.status_code >= 500
+    # Timeouts, refused or dropped connections.
+    return isinstance(exc, httpx2.TransportError)
+
+
 async def fetch_page(
     client: httpx2.AsyncClient, category: str, start: int, max_results: int
 ) -> list[ArxivPaper]:
-    """One page of `category`, newest submissions first."""
-    response = await client.get(
-        API_URL,
-        params={
-            "search_query": f"cat:{category}",
-            "sortBy": "submittedDate",
-            "sortOrder": "descending",
-            "start": start,
-            "max_results": max_results,
-        },
-    )
-    response.raise_for_status()
-    return parse_feed(response.content)
+    """One page of `category`, newest submissions first. Retries transient failures."""
+    params = {
+        "search_query": f"cat:{category}",
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+        "start": start,
+        "max_results": max_results,
+    }
+    # The trailing None is the last attempt: nothing left to wait for, so the error propagates.
+    for delay in (*RETRY_DELAYS_S, None):
+        try:
+            response = await client.get(API_URL, params=params)
+            response.raise_for_status()
+        except httpx2.HTTPError as exc:
+            if delay is None or not _is_retryable(exc):
+                raise
+            logger.warning("arxiv: start=%d failed (%r), retrying in %.0f s", start, exc, delay)
+            await asyncio.sleep(delay)
+        else:
+            return parse_feed(response.content)
+    raise AssertionError("unreachable")
