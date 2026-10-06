@@ -24,6 +24,7 @@ Format: **date — symptom.** Root cause. Fix. (1–2 lines each.)
 
 - **2026-09-23 — CI failed at "Set up job" before any step ran.** `astral-sh/setup-uv@v10` doesn't exist; that repo publishes only exact tags. Pinned `@v10.2.0`.
 - **2026-09-27 — Render deploy stuck on "loading", `/health` 503 forever.** Env var typed as `DATABSE_URL`; settings ignored it and fell back to the localhost default. Renamed the var; follow-up: no prod default for `database_url`, log health-check exceptions.
+- **2026-10-05 — Two `/health` tests failed locally with Redis `TimeoutError`, Redis was up.** On Windows `localhost` tries IPv6 `::1` first; compose publishes ports on `127.0.0.1` only, so each new connection stalled ~2 s before falling back, tripping the 2 s health timeout. Local URLs now use `127.0.0.1` (suite went 29 s → 6 s).
 
 ## Measurements
 
