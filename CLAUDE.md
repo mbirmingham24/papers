@@ -58,5 +58,5 @@ make down
 make migrate   # alembic upgrade head
 make test      # backend + frontend tests
 make lint      # ruff + eslint
-make ingest    # run ingest job locally
+make ingest    # run ingest job locally (CATEGORY=cs.LG DAYS=7); add --enqueue via the CLI to use the worker
 ```

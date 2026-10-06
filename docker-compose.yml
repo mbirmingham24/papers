@@ -46,5 +46,23 @@ services:
       redis:
         condition: service_healthy
 
+  # Same image as the api, different command: it takes jobs off the Redis queue and runs them.
+  worker:
+    build: ./backend
+    environment:
+      ENVIRONMENT: local
+      DATABASE_URL: postgresql+asyncpg://papers:papers@postgres:5432/papers
+      REDIS_URL: redis://redis:6379/0
+    # --with-scheduler: needed for delayed retries, which wait in Redis until they are due.
+    # --path: lets the worker import "app.jobs..." (the rq script doesn't add the cwd itself).
+    command: rq worker default --url redis://redis:6379/0 --with-scheduler --path /app
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   pgdata:
