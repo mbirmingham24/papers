@@ -1,12 +1,14 @@
 import asyncio
 import os
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 import pytest
+from alembic import command
 from alembic.config import Config
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 # Tests get their own database, taken from TEST_DATABASE_URL and never from DATABASE_URL:
 # migration tests drop every table, so they must not be able to reach the dev DB.
@@ -44,3 +46,21 @@ def test_database() -> str:
 @pytest.fixture
 def alembic_config(test_database: str) -> Config:
     return Config(Path(__file__).parents[1] / "alembic.ini")
+
+
+@pytest.fixture
+def migrated_database(alembic_config: Config) -> None:
+    # Sync on purpose: Alembic's env.py calls asyncio.run(), which can't nest inside
+    # the running loop an async fixture would give it.
+    command.upgrade(alembic_config, "head")
+
+
+@pytest.fixture
+async def db_session(migrated_database: None) -> AsyncIterator[AsyncSession]:
+    """A session on the migrated test DB, starting from an empty papers table."""
+    from app.core.db import SessionLocal
+
+    async with SessionLocal() as session:
+        await session.execute(text("TRUNCATE papers RESTART IDENTITY"))
+        await session.commit()
+        yield session

@@ -16,6 +16,7 @@ Format: **date — decision.** Why. What I gave up.
 - **2026-09 — Render for the API host.** Of Render/Koyeb/Fly, only Render still has free compute; builds from the repo Dockerfile, auto-deploys after CI passes. Gave up warm starts (sleeps after 15 min idle).
 - **2026-09 — AWS exercise on a new Free-plan account (open it in week 7), not a paid account + billing alarm.** Free plan can't incur charges; $100+ credits cover Fargate + ALB for weeks. Gave up: account auto-closes 6 months after signup.
 - **2026-09-27 — Split `/livez` (host prober) from `/health` (DB + Redis).** Render probes every few seconds; hitting Neon and Upstash each time would burn the Upstash command budget and keep Neon awake. Gave up: Render promotes a deploy even if a dependency is unreachable (a missing `DATABASE_URL` still fails at startup).
+- **2026-10-05 — Ingest upsert is `ON CONFLICT (arxiv_id) DO NOTHING`, not `DO UPDATE`.** Idempotency comes from the unique constraint, and the inserted-row count stays meaningful. Gave up picking up revised titles/abstracts (v2+); revisit once the embed job can detect stale embeddings.
 
 ## Bug log
 
