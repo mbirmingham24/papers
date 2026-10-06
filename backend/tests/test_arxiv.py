@@ -104,3 +104,16 @@ async def test_fetch_page_does_not_retry_client_errors(no_backoff: None) -> None
         await fetch_page(client, "cs.LG", start=0, max_results=50)
 
     assert len(requests) == 1
+
+
+def _status_error(status: int) -> httpx2.HTTPStatusError:
+    request = httpx2.Request("GET", API_URL)
+    return httpx2.HTTPStatusError(
+        str(status), request=request, response=httpx2.Response(status, request=request)
+    )
+
+
+def test_rate_limit_waits_much_longer_than_other_failures() -> None:
+    assert arxiv._wait_s(_status_error(503), 3.0) == 3.0
+    assert arxiv._wait_s(httpx2.ReadTimeout("slow"), 3.0) == 3.0
+    assert arxiv._wait_s(_status_error(429), 3.0) == 60.0

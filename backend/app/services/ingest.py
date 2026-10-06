@@ -13,6 +13,9 @@ from app.services.arxiv import ArxivPaper, fetch_page
 
 logger = logging.getLogger(__name__)
 
+# Fewer, larger requests are kinder to arXiv than many small ones; it allows up to 2000.
+PAGE_SIZE = 500
+
 # arXiv's API terms ask for no more than one request every three seconds.
 REQUEST_DELAY_S = 3.0
 
@@ -39,7 +42,7 @@ async def ingest_category(
     session: AsyncSession,
     category: str,
     since: datetime,
-    page_size: int = 100,
+    page_size: int = PAGE_SIZE,
 ) -> int:
     """Store papers in `category` submitted at or after `since`; returns how many were new."""
     inserted = 0

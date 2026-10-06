@@ -17,8 +17,8 @@ from app.services.ingest import ingest_category
 
 logger = logging.getLogger(__name__)
 
-# arXiv can take several seconds to build a page; httpx's 5 s default gives up too early.
-HTTP_TIMEOUT_S = 30
+# arXiv can take tens of seconds to build a 500-paper page; the 5 s default gives up too early.
+HTTP_TIMEOUT_S = 60
 
 
 async def _ingest(category: str, since: datetime) -> int:

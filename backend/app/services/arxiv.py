@@ -15,6 +15,9 @@ API_URL = "https://export.arxiv.org/api/query"
 
 # Wait before each retry, doubling every time; a page is tried once more than this has entries.
 RETRY_DELAYS_S: tuple[float, ...] = (3.0, 6.0, 12.0)
+# A 429 means arXiv is already throttling us, and asking again within seconds only prolongs
+# that. Its waits are this many times longer: 1, 2, then 4 minutes.
+RATE_LIMIT_MULTIPLIER = 20
 
 # Feed elements live in XML namespaces; ElementTree needs the prefix in every lookup.
 _NS = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
@@ -77,6 +80,14 @@ def _is_retryable(exc: httpx2.HTTPError) -> bool:
     return isinstance(exc, httpx2.TransportError)
 
 
+def _is_rate_limited(exc: httpx2.HTTPError) -> bool:
+    return isinstance(exc, httpx2.HTTPStatusError) and exc.response.status_code == 429
+
+
+def _wait_s(exc: httpx2.HTTPError, delay: float) -> float:
+    return delay * RATE_LIMIT_MULTIPLIER if _is_rate_limited(exc) else delay
+
+
 async def fetch_page(
     client: httpx2.AsyncClient, category: str, start: int, max_results: int
 ) -> list[ArxivPaper]:
@@ -96,8 +107,9 @@ async def fetch_page(
         except httpx2.HTTPError as exc:
             if delay is None or not _is_retryable(exc):
                 raise
-            logger.warning("arxiv: start=%d failed (%r), retrying in %.0f s", start, exc, delay)
-            await asyncio.sleep(delay)
+            wait = _wait_s(exc, delay)
+            logger.warning("arxiv: start=%d failed (%r), retrying in %.0f s", start, exc, wait)
+            await asyncio.sleep(wait)
         else:
             return parse_feed(response.content)
     raise AssertionError("unreachable")
