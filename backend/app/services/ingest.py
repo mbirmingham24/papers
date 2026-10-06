@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import Sequence
 from dataclasses import asdict
 from datetime import datetime
@@ -9,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.paper import Paper
 from app.services.arxiv import ArxivPaper, fetch_page
+
+logger = logging.getLogger(__name__)
 
 # arXiv's API terms ask for no more than one request every three seconds.
 REQUEST_DELAY_S = 3.0
@@ -46,9 +49,11 @@ async def ingest_category(
         if not papers:
             break
 
-        inserted += await upsert_papers(session, [p for p in papers if p.published_at >= since])
+        new = await upsert_papers(session, [p for p in papers if p.published_at >= since])
         # One commit per page: a failure later in the crawl keeps the pages already stored.
         await session.commit()
+        inserted += new
+        logger.info("ingest %s: start=%d fetched=%d new=%d", category, start, len(papers), new)
 
         # Pages come newest first, so once one reaches past `since` the rest are older still.
         if min(p.published_at for p in papers) < since:

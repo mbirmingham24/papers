@@ -1,4 +1,4 @@
-.PHONY: up down logs migrate test
+.PHONY: up down logs migrate test ingest
 
 up:
 	docker compose up -d --build
@@ -14,3 +14,10 @@ migrate:
 
 test:
 	uv run --directory backend pytest
+
+# make ingest CATEGORY=cs.CL DAYS=30
+CATEGORY ?= cs.LG
+DAYS ?= 7
+
+ingest:
+	uv run --directory backend python -m app.jobs.ingest $(CATEGORY) --days $(DAYS)
